@@ -8,13 +8,16 @@
 
 ## Objective
 
-Exploit the vulnerability in the lab's two-factor authentication mechanism by bruteforcing the OTP code and accessing the user account.
+Exploit the vulnerability in the lab's two-factor authentication mechanism by brute forcing the OTP code and accessing the user account.
 
 ---
 
 ## Why This Was Challenging
 
-This challenge was very difficult because after 2 incorrectly entered OTP codes, the application redirects back to the login page. This reduces the possibility of any bruteforcing attempts since each new session generates a fresh CSRF token to monitor the user's requests.
+This challenge was very difficult because after 2 incorrectly entered OTP codes, the application redirects back to the login page. This reduces the possibility of any brute forcing attempts since each new session generates a fresh CSRF token to monitor the user's requests.
+
+![Invalid CSRF Token Error](images/portswigger-invalid-csrf-token.png)
+*After 2 failed OTP attempts, the application invalidates the session*
 
 ---
 
@@ -34,7 +37,15 @@ This vulnerability can lead to account takeover and information disclosure. It r
 
 ### Step 1: Enumeration
 
-First, I analyzed how the security control was implemented. After 2 wrong OTP attempts, users are required to login again with their username and password. I needed to understand how the user's requests were being tracked - which was via the CSRF token. After entering 2 incorrect OTPs, the application returns "Invalid CSRF token (session does not contain CSRF token)".
+First, I analyzed how the security control was implemented. After 2 wrong OTP attempts, users are required to login again with their username and password. I needed to understand how the user's requests were being tracked - which was via the CSRF token.
+
+![Login Page](images/portswigger-login.png)
+*The login page where credentials are entered*
+
+After entering 2 incorrect OTPs, the application returns "Invalid CSRF token (session does not contain CSRF token)".
+
+![OTP Verification Request](images/portswigger-lab-2fa-bypass-otp-request.png)
+*Analyzing the OTP verification request structure*
 
 ### Step 2: Creating the Macro
 
@@ -48,15 +59,28 @@ To bypass this token limitation, I had to generate new tokens to be appended dur
 
 The CSRF token from step 3 is then extracted and automatically inserted into the OTP verification POST request during the bruteforce attack.
 
-This way, each OTP attempt in Turbo Intruder gets a fresh, valid CSRF token by simulating a complete login sequence before every verification attempt.
+![Macro Setup Initial](images/portswigger-macro-setup.png)
+*Setting up the macro in Burp Suite*
 
-![Macro Setup](images/macro-setup.png)
+![Authentication Settings in Macro](images/portswigger-auth-2fa-setting-macro.png)
+*Configuring the 2FA authentication flow within the macro*
+
+This way, each OTP attempt in Turbo Intruder gets a fresh, valid CSRF token by simulating a complete login sequence before every verification attempt.
 
 ### Step 3: Executing the Attack
 
-I used Burp Turbo Intruder for the bruteforcing, together with the macro to obtain a new CSRF token for each attempt.
+I used Burp Turbo Intruder for the brute forcing, together with the macro to obtain a new CSRF token for each attempt.
 
-![Turbo Intruder Attack](images/turbo-intruder.png)
+![Turbo Intruder Configuration](images/portswigger-turbo-intruder.png)
+*Configuring Turbo Intruder for the OTP bruteforce attack*
+
+![Turbo Intruder Execution](images/turbo-intruder.png)
+*Running the bruteforce attack with Turbo Intruder*
+
+The attack successfully identified the correct OTP code by analyzing response differences (status codes, response lengths, or content).
+
+![Lab Solved](images/portswigger-otp-bypass-solved.png)
+*Successfully bypassed 2FA and accessed the account*
 
 ---
 
